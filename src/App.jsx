@@ -1,44 +1,44 @@
-import { useState } from 'react'
-import SearchBar from './components/SearchBar'
-import FoodList from './components/FoodList'
+import { useReducer } from 'react'
+import { Routes, Route } from 'react-router-dom'
+import NavBar from './components/NavBar'
+import HomePage from './pages/HomePage'
+import DetailPage from './pages/DetailPage'
+import SavedPage from './pages/SavedPage'
+
+function reducer(state, action) {
+  switch (action.type) {
+    case 'ADD':
+      if (state.find((item) => item.code === action.product.code)) {
+        return state
+      }
+      return [...state, action.product]
+
+    case 'REMOVE':
+      return state.filter((item) => item.code !== action.code)
+
+    default:
+      return state
+  }
+}
 
 function App() {
-  const [results, setResults] = useState([])
-  const [loading, setLoading] = useState(false)
-
-  const handleSearch = async (query) => {
-    setLoading(true)
-
-    try {
-      const url = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(query)}&json=1&page_size=10`
-      const res = await fetch(url)
-      const data = await res.json()
-
-      const filtered = data.products.filter(
-        (p) => p.product_name && p.product_name.trim() !== ''
-      )
-
-      setResults(filtered)
-    } catch (err) {
-      console.error(err)
-    } finally {
-      setLoading(false)
-    }
-  }
+  const [saved, dispatch] = useReducer(reducer, [])
 
   return (
     <div>
-      <h1>🥗 FoodFacts</h1>
+      <NavBar savedCount={saved.length} />
 
-      <SearchBar onSearch={handleSearch} />
-
-      {loading && <p>Loading...</p>}
-
-      {!loading && results.length === 0 && (
-        <p>Search for a food above</p>
-      )}
-
-      <FoodList products={results} />
+      <Routes>
+        <Route path="/" element={<HomePage />} />
+        <Route
+          path="/product/:barcode"
+          element={<DetailPage saved={saved} dispatch={dispatch} />}
+        />
+        <Route
+          path="/saved"
+          element={<SavedPage saved={saved} dispatch={dispatch} />}
+        />
+      </Routes>
     </div>
   )
 }
